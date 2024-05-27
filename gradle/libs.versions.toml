@@ -36,6 +36,7 @@ compose-material = "1.7.6"
 # Network
 jellyfin-sdk = "1.6.6"
 okhttp = "4.12.0"
+okio = "3.9.0"
 coil = "2.7.0"
 cronet-embedded = "119.6045.31"
 
@@ -111,6 +112,7 @@ compose-material-icons-extended = { group = "androidx.compose.material", name = 
 # Network
 jellyfin-sdk = { group = "org.jellyfin.sdk", name = "jellyfin-core", version.ref = "jellyfin-sdk" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okio = { group = "com.squareup.okio", name = "okio", version.ref = "okio" }
 coil = { group = "io.coil-kt", name = "coil-base", version.ref = "coil" }
 cronet-embedded = { group = "org.chromium.net", name = "cronet-embedded", version.ref = "cronet-embedded" }
 

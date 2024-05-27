@@ -143,6 +143,7 @@ dependencies {
         }
     }
     implementation(libs.okhttp)
+    implementation(libs.okio)
     implementation(libs.coil)
     implementation(libs.cronet.embedded)
 

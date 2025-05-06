@@ -1,6 +1,6 @@
 <resources>
     <!-- Application theme -->
-    <style name="AppTheme.V21" parent="Theme.AppCompat.NoActionBar">
+    <style name="AppTheme.V21" parent="Theme.MaterialComponents.NoActionBar">
         <item name="colorPrimary">@color/jellyfin_primary</item>
         <item name="colorPrimaryDark">@color/jellyfin_primary_dark</item>
         <item name="colorAccent">@color/jellyfin_accent</item>

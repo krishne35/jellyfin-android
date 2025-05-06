@@ -17,6 +17,9 @@ allprojects {
     }
 }
 
-tasks.create<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
-}
+tasks.register<Delete>(
+    "clean",
+    fun Delete.() {
+        delete(rootProject.layout.buildDirectory)
+    }
+)

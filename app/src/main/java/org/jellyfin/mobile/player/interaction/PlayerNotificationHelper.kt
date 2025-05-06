@@ -103,6 +103,9 @@ class PlayerNotificationHelper(private val viewModel: PlayerViewModel) : KoinCom
                 currentMediaSource.item?.artists?.joinToString()?.let { artists ->
                     setContentText(artists)
                 }
+                currentMediaSource.item?.seriesName?.let { series ->
+                    setContentText(series)
+                }
                 setVisibility(Notification.VISIBILITY_PUBLIC)
                 when {
                     hasPrevious -> addAction(generateAction(PlayerNotificationAction.PREVIOUS))

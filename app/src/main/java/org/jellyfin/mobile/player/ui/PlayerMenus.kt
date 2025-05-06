@@ -3,13 +3,15 @@ package org.jellyfin.mobile.player.ui
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.ImageButton
+import android.widget.Button
 import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.annotation.StringRes
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.view.get
 import androidx.core.view.isVisible
 import androidx.core.view.size
+import com.google.android.material.button.MaterialButton
 import org.jellyfin.mobile.R
 import org.jellyfin.mobile.databinding.ExoPlayerControlViewBinding
 import org.jellyfin.mobile.databinding.FragmentPlayerBinding
@@ -36,7 +38,7 @@ class PlayerMenus(
     private val nextButton: View by playerControlsBinding::nextButton
     private val lockScreenButton: View by playerControlsBinding::lockScreenButton
     private val audioStreamsButton: View by playerControlsBinding::audioStreamsButton
-    private val subtitlesButton: ImageButton by playerControlsBinding::subtitlesButton
+    private val subtitlesButton: MaterialButton by playerControlsBinding::subtitlesButton
     private val speedButton: View by playerControlsBinding::speedButton
     private val qualityButton: View by playerControlsBinding::qualityButton
     private val decoderButton: View by playerControlsBinding::decoderButton
@@ -289,8 +291,8 @@ class PlayerMenus(
 
     private fun updateSubtitlesButton() {
         subtitlesButton.isVisible = subtitleCount > 0
-        val stateSet = intArrayOf(android.R.attr.state_checked * if (subtitlesEnabled) 1 else -1)
-        subtitlesButton.setImageState(stateSet, true)
+        val icon = AppCompatResources.getDrawable(this.context, if (subtitlesEnabled) R.drawable.ic_subtitles_white_24dp else R.drawable.ic_subtitles_off_white_24dp)
+        subtitlesButton.icon = icon
     }
 
     private fun buildQualityMenu(menu: Menu, maxStreamingBitrate: Int?, videoWidth: Int, videoHeight: Int) {

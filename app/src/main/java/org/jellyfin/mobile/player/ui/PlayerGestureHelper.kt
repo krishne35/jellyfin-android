@@ -99,9 +99,9 @@ class PlayerGestureHelper(
 
                 // Show ripple effect
                 playerView.foreground?.apply {
-                    val left = if (isFastForward) viewCenterX else 0
-                    val right = if (isFastForward) viewWidth else viewCenterX
-                    setBounds(left, viewCenterY - viewCenterX / 2, right, viewCenterY + viewCenterX / 2)
+                    val left = if (isFastForward) (viewCenterX * 1.15f).toInt() else -viewCenterX
+                    val right = if (isFastForward) viewWidth + viewCenterX else (viewCenterX * 0.85f).toInt()
+                    setBounds(left, viewCenterY - (viewCenterX / 1.15f).toInt(), right, viewCenterY + (viewCenterX * 0.85f).toInt())
                     setHotspot(e.x, e.y)
                     state = intArrayOf(android.R.attr.state_enabled, android.R.attr.state_pressed)
                     playerView.postDelayed(Constants.DOUBLE_TAP_RIPPLE_DURATION_MS) {

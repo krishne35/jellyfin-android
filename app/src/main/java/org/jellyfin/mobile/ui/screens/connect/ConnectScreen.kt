@@ -34,10 +34,6 @@ fun ConnectScreen(
                     mainViewModel.switchServer(hostname)
                 },
             )
-            DownloadList(
-                showExternalConnectionError = showExternalConnectionError,
-                onViewDownloads = { onViewDownloads() },
-            )
         }
     }
 }
@@ -51,10 +47,9 @@ fun LogoHeader() {
         Image(
             painter = painterResource(R.drawable.app_logo),
             modifier = Modifier
-                .height(72.dp),
+                .height(72.dp)
+                .padding(bottom = 8.dp),
             contentDescription = null,
         )
     }
 }
-
-fun onViewDownloads() {}

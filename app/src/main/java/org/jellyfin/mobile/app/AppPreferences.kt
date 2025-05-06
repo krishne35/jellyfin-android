@@ -111,7 +111,7 @@ class AppPreferences(context: Context) {
 
     @VideoPlayerType
     val videoPlayerType: String
-        get() = sharedPreferences.getString(Constants.PREF_VIDEO_PLAYER_TYPE, VideoPlayerType.WEB_PLAYER)!!
+        get() = sharedPreferences.getString(Constants.PREF_VIDEO_PLAYER_TYPE, VideoPlayerType.EXO_PLAYER)!!
 
     val exoPlayerStartLandscapeVideoInLandscape: Boolean
         get() = sharedPreferences.getBoolean(Constants.PREF_EXOPLAYER_START_LANDSCAPE_VIDEO_IN_LANDSCAPE, false)
@@ -134,7 +134,7 @@ class AppPreferences(context: Context) {
         get() = sharedPreferences.getBoolean(Constants.PREF_EXOPLAYER_ALLOW_BACKGROUND_AUDIO, false)
 
     val exoPlayerDirectPlayAss: Boolean
-        get() = sharedPreferences.getBoolean(Constants.PREF_EXOPLAYER_DIRECT_PLAY_ASS, false)
+        get() = sharedPreferences.getBoolean(Constants.PREF_EXOPLAYER_DIRECT_PLAY_ASS, true)
 
     @ExternalPlayerPackage
     var externalPlayerApp: String

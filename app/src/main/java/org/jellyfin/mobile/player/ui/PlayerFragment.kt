@@ -14,7 +14,6 @@ import android.view.OrientationEventListener
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-import android.widget.ImageButton
 import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
@@ -27,10 +26,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ui.PlayerView
+import com.google.android.exoplayer2.ui.SubtitleView
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.jellyfin.mobile.R
-import org.jellyfin.mobile.app.AppPreferences
 import org.jellyfin.mobile.databinding.ExoPlayerControlViewBinding
 import org.jellyfin.mobile.databinding.FragmentPlayerBinding
 import org.jellyfin.mobile.player.PlayerException
@@ -50,27 +49,28 @@ import org.jellyfin.mobile.utils.extensions.isLandscape
 import org.jellyfin.mobile.utils.extensions.keepScreenOn
 import org.jellyfin.mobile.utils.toast
 import org.jellyfin.sdk.model.api.MediaStream
-import org.koin.android.ext.android.inject
 import com.google.android.exoplayer2.ui.R as ExoplayerR
 
 class PlayerFragment : Fragment(), BackPressInterceptor {
-    private val appPreferences: AppPreferences by inject()
+    //    private val appPreferences: AppPreferences by inject()
     private val viewModel: PlayerViewModel by viewModels()
     private var _playerBinding: FragmentPlayerBinding? = null
     private val playerBinding: FragmentPlayerBinding get() = _playerBinding!!
     private val playerView: PlayerView get() = playerBinding.playerView
+    private val subtitleView: SubtitleView get() = playerBinding.subtitleView
     private val playerOverlay: View get() = playerBinding.playerOverlay
     private val loadingIndicator: View get() = playerBinding.loadingIndicator
     private var _playerControlsBinding: ExoPlayerControlViewBinding? = null
     private val playerControlsBinding: ExoPlayerControlViewBinding get() = _playerControlsBinding!!
     private val playerControlsView: View get() = playerControlsBinding.root
     private val toolbar: Toolbar get() = playerControlsBinding.toolbar
-    private val fullscreenSwitcher: ImageButton get() = playerControlsBinding.fullscreenSwitcher
+
+    //    private val fullscreenSwitcher: ImageButton get() = playerControlsBinding.fullscreenSwitcher
     private var playerMenus: PlayerMenus? = null
 
     private lateinit var playerFullscreenHelper: PlayerFullscreenHelper
     lateinit var playerLockScreenHelper: PlayerLockScreenHelper
-    lateinit var playerGestureHelper: PlayerGestureHelper
+    private lateinit var playerGestureHelper: PlayerGestureHelper
 
     private val currentVideoStream: MediaStream?
         get() = viewModel.mediaSourceOrNull?.selectedVideoStream
@@ -95,6 +95,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
         viewModel.player.observe(this) { player ->
             playerView.player = player
             if (player == null) parentFragmentManager.popBackStack()
+            subtitleView.setBottomPaddingFraction(0f)
         }
         viewModel.playerState.observe(this) { playerState ->
             val isPlaying = viewModel.playerOrNull?.isPlaying == true
@@ -112,7 +113,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
             if (mediaSource.selectedVideoStream?.isLandscape == false) {
                 // For portrait videos, immediately enable fullscreen
                 playerFullscreenHelper.enableFullscreen()
-            } else if (appPreferences.exoPlayerStartLandscapeVideoInLandscape) {
+            } else {
                 // Auto-switch to landscape for landscape videos if enabled
                 requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             }
@@ -160,9 +161,9 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
                 playerView.setPadding(0)
                 playerControlsView.updatePadding(
                     left = systemInsets.left,
-                    top = systemInsets.top,
+                    top = 0,
                     right = systemInsets.right,
-                    bottom = systemInsets.bottom,
+                    bottom = 0,
                 )
             } else {
                 playerView.updatePadding(
@@ -181,11 +182,11 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
             )
 
             // Update fullscreen switcher icon
-            val fullscreenDrawable = when {
-                playerFullscreenHelper.isFullscreen -> R.drawable.ic_fullscreen_exit_white_32dp
-                else -> R.drawable.ic_fullscreen_enter_white_32dp
-            }
-            fullscreenSwitcher.setImageResource(fullscreenDrawable)
+//            val fullscreenDrawable = when {
+//                playerFullscreenHelper.isFullscreen -> R.drawable.ic_fullscreen_exit_white_32dp
+//                else -> R.drawable.ic_fullscreen_enter_white_32dp
+//            }
+//            fullscreenSwitcher.setImageResource(fullscreenDrawable)
 
             insets
         }
@@ -203,9 +204,9 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
         playerGestureHelper = PlayerGestureHelper(this, playerBinding, playerLockScreenHelper)
 
         // Handle fullscreen switcher
-        fullscreenSwitcher.setOnClickListener {
-            toggleFullscreen()
-        }
+//        fullscreenSwitcher.setOnClickListener {
+//            toggleFullscreen()
+//        }
     }
 
     override fun onStart() {
@@ -243,27 +244,27 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
         }
     }
 
-    /**
-     * Toggle fullscreen.
-     *
-     * If playing a portrait video, this just hides the status and navigation bars.
-     * For landscape videos, additionally the screen gets rotated.
-     */
-    private fun toggleFullscreen() {
-        val videoTrack = currentVideoStream
-        if (videoTrack == null || videoTrack.isLandscape) {
-            val current = resources.configuration.orientation
-            requireActivity().requestedOrientation = when (current) {
-                Configuration.ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            }
-            // No need to call playerFullscreenHelper in this case,
-            // since the configuration change triggers updateFullscreenState,
-            // which does it for us.
-        } else {
-            playerFullscreenHelper.toggleFullscreen()
-        }
-    }
+//    /**
+//     * Toggle fullscreen.
+//     *
+//     * If playing a portrait video, this just hides the status and navigation bars.
+//     * For landscape videos, additionally the screen gets rotated.
+//     */
+//    private fun toggleFullscreen() {
+//        val videoTrack = currentVideoStream
+//        if (videoTrack == null || videoTrack.isLandscape) {
+//            val current = resources.configuration.orientation
+//            requireActivity().requestedOrientation = when (current) {
+//                Configuration.ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+//                else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+//            }
+//            // No need to call playerFullscreenHelper in this case,
+//            // since the configuration change triggers updateFullscreenState,
+//            // which does it for us.
+//        } else {
+//            playerFullscreenHelper.toggleFullscreen()
+//        }
+//    }
 
     /**
      * If true, the player controls will show indefinitely

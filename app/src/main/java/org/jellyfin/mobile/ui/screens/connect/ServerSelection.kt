@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
@@ -29,7 +31,8 @@ import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -48,9 +51,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.jellyfin.mobile.R
 import org.jellyfin.mobile.app.ApiClientController
@@ -76,6 +81,8 @@ fun ServerSelection(
     val serverSuggestions = remember { mutableStateListOf<ServerSuggestion>() }
     var checkUrlState by remember<MutableState<CheckUrlState>> { mutableStateOf(CheckUrlState.Unchecked) }
     var externalError by remember { mutableStateOf(showExternalConnectionError) }
+    var downloadURI by remember { mutableStateOf("") }
+    val downloadItems = remember { mutableStateListOf<DownloadItem>() }
 
     // Prefill currently selected server if available
     LaunchedEffect(Unit) {
@@ -124,45 +131,61 @@ fun ServerSelection(
     }
 
     Column {
-        Text(
-            text = stringResource(R.string.connect_to_server_title),
-            modifier = Modifier.padding(bottom = 8.dp),
-            style = MaterialTheme.typography.h5,
-        )
         Crossfade(
             targetState = serverSelectionMode,
             label = "Server selection mode",
         ) { selectionType ->
             when (selectionType) {
-                ServerSelectionMode.ADDRESS -> AddressSelection(
-                    text = hostname,
-                    errorText = when {
-                        externalError -> stringResource(R.string.connection_error_cannot_connect)
-                        else -> (checkUrlState as? CheckUrlState.Error)?.message
-                    },
-                    loading = checkUrlState is CheckUrlState.Pending,
-                    onTextChange = { value ->
-                        externalError = false
-                        checkUrlState = CheckUrlState.Unchecked
-                        hostname = value
-                    },
-                    onDiscoveryClick = {
-                        externalError = false
-                        keyboardController?.hide()
-                        serverSelectionMode = ServerSelectionMode.AUTO_DISCOVERY
-                    },
-                    onSubmit = {
-                        onSubmit()
-                    },
-                )
-                ServerSelectionMode.AUTO_DISCOVERY -> ServerDiscoveryList(
-                    serverSuggestions = serverSuggestions,
+                ServerSelectionMode.ADDRESS -> {
+                    Row {
+                        AddressSelection(
+                            text = hostname,
+                            errorText = when {
+                                externalError -> stringResource(R.string.connection_error_cannot_connect)
+                                else -> (checkUrlState as? CheckUrlState.Error)?.message
+                            },
+                            loading = checkUrlState is CheckUrlState.Pending,
+                            onTextChange = { value ->
+                                externalError = false
+                                checkUrlState = CheckUrlState.Unchecked
+                                hostname = value
+                            },
+                            onDiscoveryClick = {
+                                externalError = false
+                                keyboardController?.hide()
+                                serverSelectionMode = ServerSelectionMode.AUTO_DISCOVERY
+                            },
+                            onSubmit = {
+                                onSubmit()
+                            },
+                            onDownloadButtonClick = {
+                                serverSelectionMode = ServerSelectionMode.DOWNLOADS
+                            },
+                        )
+                    }
+                }
+                ServerSelectionMode.AUTO_DISCOVERY -> {
+                    Column {
+                        ServerDiscoveryList(
+                            serverSuggestions = serverSuggestions,
+                            onGoBack = {
+                                serverSelectionMode = ServerSelectionMode.ADDRESS
+                            },
+                            onSelectServer = { url ->
+                                hostname = url
+                                serverSelectionMode = ServerSelectionMode.ADDRESS
+                                onSubmit()
+                            },
+                        )
+                    }
+                }
+                ServerSelectionMode.DOWNLOADS -> DownloadsList(
+                    downloadItems = downloadItems,
                     onGoBack = {
                         serverSelectionMode = ServerSelectionMode.ADDRESS
                     },
-                    onSelectServer = { url ->
-                        hostname = url
-                        serverSelectionMode = ServerSelectionMode.ADDRESS
+                    onPlayDownload = { uri ->
+                        downloadURI = uri
                         onSubmit()
                     },
                 )
@@ -180,6 +203,7 @@ private fun AddressSelection(
     onTextChange: (String) -> Unit,
     onDiscoveryClick: () -> Unit,
     onSubmit: () -> Unit,
+    onDownloadButtonClick: () -> Unit,
 ) {
     Column {
         ServerUrlField(
@@ -192,13 +216,12 @@ private fun AddressSelection(
         if (!loading) {
             Spacer(modifier = Modifier.height(12.dp))
             StyledTextButton(
-                text = stringResource(R.string.connect_button_text),
-                enabled = text.isNotBlank(),
-                onClick = onSubmit,
-            )
-            StyledTextButton(
                 text = stringResource(R.string.choose_server_button_text),
                 onClick = onDiscoveryClick,
+            )
+            StyledTextButton(
+                text = stringResource(R.string.pref_category_downloads),
+                onClick = onDownloadButtonClick,
             )
         } else {
             CenterRow {
@@ -216,36 +239,53 @@ private fun ServerUrlField(
     onTextChange: (String) -> Unit,
     onSubmit: () -> Unit,
 ) {
-    OutlinedTextField(
-        value = text,
-        onValueChange = onTextChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 8.dp)
-            .onKeyEvent { keyEvent ->
-                when (keyEvent.nativeKeyEvent.keyCode) {
-                    KeyEvent.KEYCODE_ENTER -> {
-                        onSubmit()
-                        true
+    CenterRow {
+        OutlinedTextField(
+            value = text,
+            onValueChange = onTextChange,
+            modifier = Modifier
+                .padding(bottom = 8.dp)
+                .fillMaxWidth(0.8f)
+                .onKeyEvent { keyEvent ->
+                    when (keyEvent.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_ENTER -> {
+                            onSubmit()
+                            true
+                        }
+                        else -> false
                     }
-                    else -> false
-                }
+                },
+            label = {
+                Text(text = stringResource(R.string.host_input_hint))
             },
-        label = {
-            Text(text = stringResource(R.string.host_input_hint))
-        },
-        isError = errorText != null,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Uri,
-            imeAction = ImeAction.Go,
-        ),
-        keyboardActions = KeyboardActions(
-            onGo = {
-                onSubmit()
-            },
-        ),
-        singleLine = true,
-    )
+            shape = MaterialTheme.shapes.large,
+            isError = errorText != null,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Uri,
+                imeAction = ImeAction.Go,
+            ),
+            keyboardActions = KeyboardActions(
+                onGo = {
+                    onSubmit()
+                },
+            ),
+            singleLine = true,
+        )
+        Button(
+            enabled = text.isNotBlank(),
+            onClick = { onSubmit() },
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .height(56.dp)
+            .width(56.dp),
+            colors = ButtonDefaults.buttonColors(),
+            shape = MaterialTheme.shapes.large,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Done, contentDescription = null, tint = MaterialTheme.colors.onPrimary
+            )
+        }
+    }
 }
 
 @Stable
@@ -279,11 +319,13 @@ private fun StyledTextButton(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .height(56.dp),
         enabled = enabled,
         colors = ButtonDefaults.buttonColors(),
+        shape = MaterialTheme.shapes.large,
     ) {
-        Text(text = text)
+        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -299,13 +341,14 @@ private fun ServerDiscoveryList(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onGoBack) {
-                Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = null)
+                Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
             }
             Text(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 8.dp),
                 text = stringResource(R.string.available_servers_title),
+                style = MaterialTheme.typography.h6,
             )
             CircularProgressIndicator(
                 modifier = Modifier
@@ -351,6 +394,67 @@ private fun ServerDiscoveryItem(
         },
         secondaryText = {
             Text(text = serverSuggestion.address)
+        },
+    )
+}
+
+@Stable
+@Composable
+private fun DownloadsList(
+    downloadItems: SnapshotStateList<DownloadItem>,
+    onGoBack: () -> Unit,
+    onPlayDownload: (String) -> Unit,
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onGoBack) {
+                Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
+            }
+            Text(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp, vertical = 16.dp),
+                text = stringResource(R.string.available_downloads),
+                style = MaterialTheme.typography.h6,
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(
+            modifier = Modifier
+                .padding(bottom = 16.dp)
+                .fillMaxSize()
+                .background(
+                    color = MaterialTheme.colors.surface,
+                    shape = MaterialTheme.shapes.medium,
+                ),
+        ) {
+            items(downloadItems) { download ->
+                DownloadItem(
+                    downloadItem = download,
+                    onClickItem = {
+                        onPlayDownload(download.uri)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Stable
+@Composable
+private fun DownloadItem(
+    downloadItem: DownloadItem,
+    onClickItem: () -> Unit,
+) {
+    ListItem(
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClickItem),
+        text = {
+            Text(text = downloadItem.name)
         },
     )
 }

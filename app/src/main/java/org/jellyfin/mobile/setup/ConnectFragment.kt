@@ -44,7 +44,5 @@ class ConnectFragment : Fragment() {
                 )
             }
         }
-
-        Toast.makeText(activity?.applicationContext, "Its a toast!", Toast.LENGTH_SHORT).show()
     }
 }

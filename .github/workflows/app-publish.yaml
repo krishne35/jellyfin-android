@@ -2,9 +2,10 @@ name: App / Publish
 
 on:
   push:
-    tags:
-      - v*
-
+    branches:
+      - master
+  pull_request:
+  
 jobs:
   publish:
     name: Publish
